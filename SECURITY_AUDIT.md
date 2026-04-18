@@ -199,6 +199,8 @@ The following evidentiary artifacts were read in whole or in relevant part. Line
 
 This section presents each finding with a stable ID, title, severity, category, citation, narrative description, exploit scenario, and prose remediation. Findings are ordered by severity (Critical → High → Medium → Low → Informational); within a severity bucket they are ordered by ID. At the end of the section, a per-category "No Issue Found" subsection cites the specific evidence examined for categories whose verdict is clean — silence is not acceptable as a verdict.
 
+**Citation conventions.** The default citation form for every finding is the `<file>:<line>` or `<file>:<start>-<end>` anchor required by the Documentation Rules (§0.10.9 of the Agent Action Plan), and the overwhelming majority of findings in this section follow that form. Three classes of finding are inherently bound to a *file-level* property rather than a single source line, and for those cases the citation is intentionally rendered at file granularity even when a line range is also provided for context. The three classes are: (1) **whole-file metadata properties** — for example, a file that is itself a symbolic link or a permissions bit on a file as a whole, where the property is not located at any particular line within the file; (2) **cross-cutting workspace or supply-chain posture** — for example, a finding that depends on the conjunction of values from multiple manifests, multiple workflow files, or multiple lint declarations, where no single line carries the finding by itself; and (3) **per-block tabular inventories** — for example, the Low-Level Code Inventory in Section 5, where the per-row tables already carry per-occurrence line anchors and the surrounding finding text refers to the inventory as a whole. When a finding in this section is constrained to one of these three classes, every contributing file is named explicitly, and a representative line anchor (or anchor range) is included where one exists, so that the reader can trace each contributing element back to its source even when the finding itself spans more than a single line.
+
 ### 3.1 Critical Findings
 
 **No Critical findings were identified through static analysis.** A Critical finding would require a zero-precondition sandbox escape. The highest-priority surfaces (the nine-step path-resolution pipeline in `crates/monty/src/fs/path_security.rs:1-447`, the heap `HeapReader` closure discipline in `crates/monty/src/heap.rs`, the `From<ResourceError> for RunError` catchability routing in `crates/monty/src/resource.rs:218-228`, the three-gate snapshot integrity envelope in `crates/monty-python/src/serialization.rs:64-87`, and the twenty-variant closed `OsFunction` catalog in `crates/monty/src/os.rs`) were each examined across every reachable code path and found to be sound under the documented adversary model. The absence of Critical findings is qualified by the static-analysis limitation: runtime-only escape vectors (dynamic dispatch under platform-specific stack sizes, race conditions in multi-threaded embeddings, side-channel observation) are enumerated in Section 7 "Out of Scope."
@@ -363,7 +365,7 @@ This section presents each finding with a stable ID, title, severity, category, 
 
 - **Severity:** Informational (positive finding)
 - **Category:** Public-API developer misuse (Category 10)
-- **Citations:** Workspace `Cargo.toml` release profile: `lto = "fat"`, `codegen-units = 1`, `strip = true`
+- **Citations:** `Cargo.toml:29-32` — workspace `[profile.release]` block: `lto = "fat"` at `Cargo.toml:30`, `codegen-units = 1` at `Cargo.toml:31`, `strip = true` at `Cargo.toml:32`
 
 **Description.** The workspace release profile in `Cargo.toml` sets `lto = "fat"` (full link-time optimization across crates), `codegen-units = 1` (no parallel codegen; maximizes optimizer reach), and `strip = true` (debug symbols stripped from the shipped binary). `lto = "fat"` improves inlining and dead-code elimination, which typically reduces exploitable gadget surface; `codegen-units = 1` eliminates inter-unit indirections; `strip = true` reduces information disclosure via a crashed process's debug symbols. Together these settings reflect a deliberate posture toward hardened release artifacts.
 
@@ -375,7 +377,7 @@ This section presents each finding with a stable ID, title, severity, category, 
 
 - **Severity:** Informational (positive finding)
 - **Category:** Low-level code safety (Category 2)
-- **Citations:** Workspace `Cargo.toml`: `undocumented_unsafe_blocks = "warn"`, `allow_attributes = "warn"`, `dbg_macro = "warn"`, pedantic group enabled
+- **Citations:** `Cargo.toml:74-84` — workspace `[workspace.lints.clippy]` block at `Cargo.toml:74`: `dbg_macro = "warn"` at `Cargo.toml:75`, `allow_attributes = "warn"` at `Cargo.toml:77`, `undocumented_unsafe_blocks = "warn"` at `Cargo.toml:78`, pedantic group enabled at `Cargo.toml:84`
 
 **Description.** The workspace `Cargo.toml` lint policy enables Clippy's `undocumented_unsafe_blocks` lint at `warn` severity. Combined with the project's CI policy (which treats warnings as errors — a separate artifact of `.github/workflows/ci.yml`), every `unsafe` block merged into main must carry a `// SAFETY:` comment explaining the invariant relied upon. Review of all 53 `unsafe` code blocks enumerated in Section 5 "Low-Level Code Inventory" confirms that every block carries such a comment. The `allow_attributes = "warn"` and `dbg_macro = "warn"` policies further ensure that `#[allow(...)]` overrides are visible at review time and that stray `dbg!` macros do not ship. Together these form an architectural guardrail against degraded documentation of unsafe code.
 
@@ -470,8 +472,9 @@ sequenceDiagram
     M->>F: perform I/O
     F-->>M: result
     M-->>S: MontyObject OR MountError (no host paths)
-    Note over S,F: Legend - each numbered step is a security gate; failure at any step aborts before host I/O; only virtual paths cross the sandbox boundary back to S.
 ```
+
+Legend: Each `autonumber`-prefixed message is one of the nine security gates traversed by `resolve_path`. Steps 1–6 are pure-syntactic checks performed before any host I/O is attempted. Step 7 is the only gate that touches the host filesystem (`canonicalize`). Steps 8–9 verify that the resolved canonical path remains within the host-side mount root. Failure at any gate aborts the resolution with a `MountError`, and the error rendered back to sandboxed code (final arrow from `M` to `S`) carries only virtual paths — never host paths.
 
 ### 4.3 Diagram 3 — Snapshot Integrity Flow
 

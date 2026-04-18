@@ -82,7 +82,7 @@ flowchart LR
     Y --> B1
     Y --> B2
     Y --> B3
-    %% Legend: Z1 is fully trusted. Z2 is a trusted adapter; monty-python has 0 unsafe, monty-js has 11 unsafe FFI blocks. Z3 preprocesses untrusted code but does not evaluate it. Z4 is the sole evaluator of untrusted code, containing 45 unsafe blocks of the workspace total of 53. Z5 is the only egress path; all side effects flow through the RunProgress enum.
+    %% Legend: Z1 is fully trusted. Z2 is a trusted adapter; monty-python has 0 unsafe, monty-js has 11 unsafe FFI blocks. Z3 preprocesses untrusted code but does not evaluate it. Z4 is the sole evaluator of untrusted code, containing 42 unsafe blocks (21 heap.rs + 17 heap_entries.rs + 4 heap_traits.rs) of the workspace total of 53. Z5 is the only egress path; all side effects flow through the RunProgress enum.
 ```
 
 ### 1.4 Top Risks at a Glance
@@ -153,42 +153,42 @@ This audit is **static analysis only**. Specifically:
 
 ### 2.3 Audit Trail Artifacts
 
-The following evidentiary artifacts were read in whole or in relevant part. Line counts are provided where they substantiate the audit's claim to have examined a file in its entirety.
+The following evidentiary artifacts were read in whole or in relevant part. Line counts are provided where they substantiate the audit's claim to have examined a file in its entirety. All line counts in this table reflect `wc -l` output (newline-terminator count), not raw line index; they are intended as methodological reproducibility anchors and do not affect any `file:line` citation elsewhere in this report.
 
 | Artifact | Lines | Role in the Audit |
 |---|---|---|
 | `crates/monty/src/fs/path_security.rs` | 447 | Nine-step path-resolution pipeline (filesystem boundary) |
-| `crates/monty/src/fs/mount_table.rs` | 318 | Longest-prefix mount routing, cross-mount rename rejection |
-| `crates/monty/src/fs/mount_mode.rs` | 61 | Three-variant `MountMode` |
-| `crates/monty/src/fs/dispatch.rs` | 232 | `FsRequest` dispatch; read-only write rejection |
-| `crates/monty/src/fs/direct.rs` | 159+ | Host-backed backend |
-| `crates/monty/src/fs/overlay.rs` | 855+ | Copy-on-write overlay backend |
-| `crates/monty/src/fs/overlay_state.rs` | 162+ | Overlay entry taxonomy |
-| `crates/monty/src/fs/common.rs` | 239 | Shared fs helpers; `MountContext` |
-| `crates/monty/src/fs/error.rs` | 201 | `MountError` taxonomy; POSIX errno |
-| `crates/monty/src/fs/mod.rs` | 36 | Public fs namespace |
+| `crates/monty/src/fs/mount_table.rs` | 317 | Longest-prefix mount routing, cross-mount rename rejection |
+| `crates/monty/src/fs/mount_mode.rs` | 60 | Three-variant `MountMode` |
+| `crates/monty/src/fs/dispatch.rs` | 231 | `FsRequest` dispatch; read-only write rejection |
+| `crates/monty/src/fs/direct.rs` | 159 | Host-backed backend |
+| `crates/monty/src/fs/overlay.rs` | 854 | Copy-on-write overlay backend |
+| `crates/monty/src/fs/overlay_state.rs` | 161 | Overlay entry taxonomy |
+| `crates/monty/src/fs/common.rs` | 238 | Shared fs helpers; `MountContext` |
+| `crates/monty/src/fs/error.rs` | 200 | `MountError` taxonomy; POSIX errno |
+| `crates/monty/src/fs/mod.rs` | 35 | Public fs namespace |
 | `crates/monty/src/heap.rs` | 1,667 | All runtime `unsafe`; reader-count invariant |
-| `crates/monty/src/heap/heap_entries.rs` | 335 | Paged storage; `PAGE_SIZE = 256` |
-| `crates/monty/src/heap_traits.rs` | 310 | `defer_drop!` family; `ManuallyDrop::take` |
+| `crates/monty/src/heap/heap_entries.rs` | 521 | Paged storage; `PAGE_SIZE = 256` |
+| `crates/monty/src/heap_traits.rs` | 369 | `defer_drop!` family; `ManuallyDrop::take` |
 | `crates/monty/src/resource.rs` | 603 | `ResourceTracker`; catchability routing |
 | `crates/monty/src/os.rs` | 286 | Twenty-variant `OsFunction` |
 | `crates/monty/src/run.rs` | 531 | `MontyRun` execution loop |
-| `crates/monty/src/run_progress.rs` | — | `RunProgress<T>` outbound yield |
+| `crates/monty/src/run_progress.rs` | 826 | `RunProgress<T>` outbound yield |
 | `crates/monty/src/parse.rs` | 1,764 | `MAX_NESTING_DEPTH` |
 | `crates/monty/src/modules/*.rs` | varies | Sandboxed stdlib (9 modules) |
 | `crates/monty/src/builtins/mod.rs` | — | 29 implemented; dangerous ones commented out |
-| `crates/monty/src/types/re_pattern.rs` | 60 | ReDoS doc-comment acknowledgment |
-| `crates/monty-python/src/lib.rs` | 118 | PyO3 module |
+| `crates/monty/src/types/re_pattern.rs` | 723 | ReDoS doc-comment acknowledgment |
+| `crates/monty-python/src/lib.rs` | 117 | PyO3 module |
 | `crates/monty-python/src/serialization.rs` | 822 | Snapshot integrity envelope |
 | `crates/monty-python/src/external.rs` | 331 | `ExternalFunctionRegistry` |
 | `crates/monty-python/src/mount.rs` | 229 | `SharedMount = Arc<Mutex<Option<Mount>>>` |
-| `crates/monty-python/src/limits.rs` | 231 | `PySignalTracker` |
-| `crates/monty-python/src/monty_cls.rs` | 700+ | `PyMonty` class |
-| `crates/monty-js/src/lib.rs` | 44 | napi-rs module |
-| `crates/monty-js/src/convert.rs` | — | JS↔Rust conversion; 4 `unsafe` |
-| `crates/monty-js/src/monty_cls.rs` | — | N-API class; 5 `unsafe` |
-| `crates/monty-js/src/mount.rs` | — | MountDir binding; 2 `unsafe` |
-| `crates/monty-cli/src/main.rs` | 700+ | CLI entry; `EXT_FUNCTIONS: bool = false` |
+| `crates/monty-python/src/limits.rs` | 230 | `PySignalTracker` |
+| `crates/monty-python/src/monty_cls.rs` | 1,820 | `PyMonty` class |
+| `crates/monty-js/src/lib.rs` | 43 | napi-rs module |
+| `crates/monty-js/src/convert.rs` | 728 | JS↔Rust conversion; 4 `unsafe` |
+| `crates/monty-js/src/monty_cls.rs` | 1,721 | N-API class; 5 `unsafe` |
+| `crates/monty-js/src/mount.rs` | 217 | MountDir binding; 2 `unsafe` |
+| `crates/monty-cli/src/main.rs` | 768 | CLI entry; `EXT_FUNCTIONS: bool = false` |
 | `README.md`, `CLAUDE.md`, `AGENTS.md`, `RELEASING.md` | — | Stated invariants and project posture |
 | `Cargo.toml`, per-crate manifests, `Cargo.lock` | — | Dependency pins, lint policy, release profile |
 
@@ -241,9 +241,9 @@ This section presents each finding with a stable ID, title, severity, category, 
 
 - **Severity:** Medium
 - **Category:** Public-API developer misuse (Category 10)
-- **Citations:** `crates/monty/src/resource.rs:354-367` (struct definition with `#[derive(Default)]`), `crates/monty/src/resource.rs:368` (`DEFAULT_MAX_RECURSION_DEPTH = 1000`), `crates/monty/src/resource.rs:371` (`ResourceLimits::new()` sets `max_recursion_depth: Some(1000)` and nothing else)
+- **Citations:** `crates/monty/src/resource.rs:353-365` (struct definition with `#[derive(Default)]`), `crates/monty/src/resource.rs:368` (`DEFAULT_MAX_RECURSION_DEPTH = 1000`), `crates/monty/src/resource.rs:371` (`ResourceLimits::new()` sets `max_recursion_depth: Some(1000)` and nothing else)
 
-**Description.** The `ResourceLimits` struct in `crates/monty/src/resource.rs:354-367` derives `Default`. Because every field is `Option<...>` with `None` as the natural zero, `ResourceLimits::default()` returns a value with every field `None` — meaning no allocation cap, no memory cap, no wall-clock cap, no GC interval, and crucially **no recursion-depth cap**. The safe-default path is `ResourceLimits::new()` at `crates/monty/src/resource.rs:371`, which sets `max_recursion_depth: Some(1000)` (matching the `DEFAULT_MAX_RECURSION_DEPTH = 1000` constant at line 368) and leaves other caps `None`. The risk is that `default()` is the more ergonomic Rust idiom; a Rust developer learning the library will reach for it reflexively.
+**Description.** The `ResourceLimits` struct in `crates/monty/src/resource.rs:353-365` derives `Default`. Because every field is `Option<...>` with `None` as the natural zero, `ResourceLimits::default()` returns a value with every field `None` — meaning no allocation cap, no memory cap, no wall-clock cap, no GC interval, and crucially **no recursion-depth cap**. The safe-default path is `ResourceLimits::new()` at `crates/monty/src/resource.rs:371`, which sets `max_recursion_depth: Some(1000)` (matching the `DEFAULT_MAX_RECURSION_DEPTH = 1000` constant at line 368) and leaves other caps `None`. The risk is that `default()` is the more ergonomic Rust idiom; a Rust developer learning the library will reach for it reflexively.
 
 **Exploit scenario.** A downstream Rust embedder writes code structurally similar to `Monty::new(code, args, ResourceLimits::default(), None)`. The compiled binary now evaluates untrusted Python with no stack-depth protection and no memory/time/allocation caps. An adversary submits a Python program that defines `def f(): return f()` and invokes `f()`. Execution recurses until the native stack is exhausted, at which point the host process either segfaults or hits the operating system's stack guard page. Because Rust's abort-on-stack-overflow is the end state, this is a reliable host-process crash rather than a sandbox-catchable exception. (By contrast, with `ResourceLimits::new()` in effect, `resource.rs`'s recursion cap would convert the same program into a catchable `RecursionError` at depth 1000 — see `crates/monty/src/resource.rs:218-228`.)
 
@@ -255,9 +255,9 @@ This section presents each finding with a stable ID, title, severity, category, 
 
 - **Severity:** Medium
 - **Category:** Public-API developer misuse (Category 10)
-- **Citations:** `crates/monty/src/run.rs:92` (`MontyRun::run` delegates to `run_no_limits`), `crates/monty/src/resource.rs:303` (`pub struct NoLimitTracker`), `crates/monty/src/lib.rs:36-53` (re-exports `NoLimitTracker` and `LimitedTracker`)
+- **Citations:** `crates/monty/src/run.rs:91-93` (`run_no_limits` convenience helper invokes `self.run(inputs, NoLimitTracker, PrintWriter::Stdout)`), `crates/monty/src/resource.rs:303` (`pub struct NoLimitTracker`), `crates/monty/src/lib.rs:36-53` (re-exports `NoLimitTracker` and `LimitedTracker`)
 
-**Description.** The core-crate public API re-exports both `NoLimitTracker` and `LimitedTracker` (see `crates/monty/src/lib.rs:36-53`). The Rust API's terse ergonomic entry point is `MontyRun::new(code).run(...)`; the `run` method at `crates/monty/src/run.rs:92` delegates to `run_no_limits`, which uses `NoLimitTracker` — a resource tracker that approves every allocation, every time check, every memory check, and every recursion tick unconditionally. The concern is that the most ergonomic Rust entry point runs untrusted code with every resource limit disabled. Embedders who expect "limits by default, opt out for perf" are surprised; the actual contract is the inverse.
+**Description.** The core-crate public API re-exports both `NoLimitTracker` and `LimitedTracker` (see `crates/monty/src/lib.rs:36-53`). The `run_no_limits` convenience helper at `crates/monty/src/run.rs:91-93` invokes `self.run(inputs, NoLimitTracker, PrintWriter::Stdout)`, and the public `run` method itself accepts a caller-supplied `ResourceTracker` — meaning a naive embedder who reaches for `run_no_limits` or who passes `NoLimitTracker` explicitly into `run` receives a no-cap evaluation. `NoLimitTracker` is a resource tracker that approves every allocation, every time check, every memory check, and every recursion tick unconditionally. The concern is that an ergonomic Rust entry point runs untrusted code with every resource limit disabled. Embedders who expect "limits by default, opt out for perf" are surprised; the actual contract is the inverse.
 
 **Exploit scenario.** As above (SA-F-003) — a downstream Rust embedder writes `MontyRun::new(code).run(&args)` expecting safe defaults and receives a no-limit evaluation. An adversary submits `while True: x = [0] * (2**30)` (a memory-exhaustion loop) and the host process is driven into an OOM condition. The sandbox does not intervene because `NoLimitTracker`'s allocation and memory checks both return `Ok(())` unconditionally.
 
@@ -410,7 +410,7 @@ The ten attack-vector categories specified by the engagement are enumerated belo
 | 7 | External function and callback misuse | Minor defense-in-depth gap — SA-F-007 on `inspect.iscoroutine` silent default | `crates/monty-python/src/external.rs:91-331`; `crates/monty-python/src/external.rs:305-311` (the `.unwrap_or(false)` line) |
 | 8 | Deserialization attacks | Clean (three-gate integrity envelope is Verified; see Section 4) | `crates/monty-python/src/serialization.rs:39` (`SERIALIZATION_VERSION = 2`), `crates/monty-python/src/serialization.rs:42` (`HEADER_SIZE = 34`), `crates/monty-python/src/serialization.rs:64-87` (the three gates: length, version, SHA-256) |
 | 9 | Information leakage | Clean (host paths omitted from `PathEscape`; errno codes hardcoded POSIX; `Resolve`/`Absolute` return virtual paths only) | `crates/monty/src/fs/error.rs:1-201` (taxonomy, `into_exception`, POSIX errno); `crates/monty/src/fs/direct.rs:63-65` and `crates/monty/src/fs/overlay.rs:64-66` (virtual-path guarantees) |
-| 10 | Public API developer misuse | 5 findings (SA-F-002 High, SA-F-003 Medium, SA-F-004 Medium, SA-F-005 Medium, SA-F-006 Low); mitigated by positive findings SA-F-008/SA-F-011/SA-F-012/SA-F-013/SA-F-014 | `crates/monty/src/lib.rs:36-53`, `crates/monty/src/run.rs:92`, `crates/monty/src/resource.rs:303,354-367,371`, `crates/monty/src/os.rs:1-100`, `Cargo.lock:852,1764`, `Cargo.toml` release profile and lint policy |
+| 10 | Public API developer misuse | 5 findings (SA-F-002 High, SA-F-003 Medium, SA-F-004 Medium, SA-F-005 Medium, SA-F-006 Low); mitigated by positive findings SA-F-008/SA-F-011/SA-F-012/SA-F-013/SA-F-014 | `crates/monty/src/lib.rs:36-53`, `crates/monty/src/run.rs:91-93`, `crates/monty/src/resource.rs:303,353-365,371`, `crates/monty/src/os.rs:1-100`, `Cargo.lock:852,1764`, `Cargo.toml` release profile and lint policy |
 
 ---
 
@@ -691,10 +691,10 @@ Finding cross-reference: SA-F-002 and SA-F-006. `Cargo.lock` contains both `fanc
 ### 6.3 Medium-Priority Recommendations
 
 **R-003 — Make `ResourceLimits::default()` produce the same safe defaults as `ResourceLimits::new()`.**
-Finding cross-reference: SA-F-003. `crates/monty/src/resource.rs:354-367` derives `Default` on `ResourceLimits`, which leaves every `Option<...>` field at `None` — no recursion cap, no memory cap, no time cap, no allocation cap. The adjacent `ResourceLimits::new()` at line 371 sets `max_recursion_depth: Some(DEFAULT_MAX_RECURSION_DEPTH)`. The convenience idiom `ResourceLimits::default()` is widely used in Rust code and represents the surface most likely to be reached by a naive embedder; leaving it as the zero-protection path is a Medium-severity defense-in-depth gap. The recommended action is to replace the derived `Default` with a hand-implemented `Default` that returns `ResourceLimits::new()` exactly — optionally renaming the existing zero-protection constructor to `ResourceLimits::none()` or `ResourceLimits::unchecked()` to preserve the ability to obtain a no-limit sentinel when trusted contexts require it. Effort: Low — a single struct declaration change plus a migration note in `RELEASING.md` for the next release. Validation: add a unit test that asserts `ResourceLimits::default().max_recursion_depth == Some(DEFAULT_MAX_RECURSION_DEPTH)` and that every other field is likewise set to its safe default.
+Finding cross-reference: SA-F-003. `crates/monty/src/resource.rs:353-365` derives `Default` on `ResourceLimits`, which leaves every `Option<...>` field at `None` — no recursion cap, no memory cap, no time cap, no allocation cap. The adjacent `ResourceLimits::new()` at line 371 sets `max_recursion_depth: Some(DEFAULT_MAX_RECURSION_DEPTH)`. The convenience idiom `ResourceLimits::default()` is widely used in Rust code and represents the surface most likely to be reached by a naive embedder; leaving it as the zero-protection path is a Medium-severity defense-in-depth gap. The recommended action is to replace the derived `Default` with a hand-implemented `Default` that returns `ResourceLimits::new()` exactly — optionally renaming the existing zero-protection constructor to `ResourceLimits::none()` or `ResourceLimits::unchecked()` to preserve the ability to obtain a no-limit sentinel when trusted contexts require it. Effort: Low — a single struct declaration change plus a migration note in `RELEASING.md` for the next release. Validation: add a unit test that asserts `ResourceLimits::default().max_recursion_depth == Some(DEFAULT_MAX_RECURSION_DEPTH)` and that every other field is likewise set to its safe default.
 
 **R-004 — Make the no-limits execution path explicit at the public API.**
-Finding cross-reference: SA-F-004. `crates/monty/src/run.rs:92` exposes `MontyRun::run` as the ergonomic entry point; internally it installs a `NoLimitTracker` unless overridden. A developer who writes `Monty::new(code).run()` and expects safe defaults — a reasonable inference from Rust's usual idioms — runs untrusted Python with every resource limit disabled. The recommended action is one of (a) rename the current helper to `run_unchecked` and expose a new `run` method that installs a `ResourceTracker` seeded with `ResourceLimits::new()` safe defaults, or (b) keep the method name but have it accept a `ResourceLimits` parameter by value with the safe-default behavior. Either way, the compile-time API must force a developer to explicitly opt into no limits. Effort: Medium — this is a public API change; a deprecation cycle is recommended. Validation: re-read all call sites inside `monty-python`, `monty-js`, `monty-cli`, and the `examples/` directory to confirm every binding routes through a tracker with non-`None` limits.
+Finding cross-reference: SA-F-004. `crates/monty/src/run.rs:91-93` exposes `run_no_limits` as an ergonomic convenience helper that invokes `self.run(inputs, NoLimitTracker, PrintWriter::Stdout)`, and the public `run` method itself accepts a caller-supplied `ResourceTracker`. A developer who reaches for `MontyRun::new(code).run_no_limits(&args)`, or who passes `NoLimitTracker` explicitly into `run`, and expects safe defaults — a reasonable inference from Rust's usual idioms — runs untrusted Python with every resource limit disabled. The recommended action is one of (a) rename the current helper to `run_unchecked` and expose a new `run` method that installs a `ResourceTracker` seeded with `ResourceLimits::new()` safe defaults, or (b) keep the method name but have it accept a `ResourceLimits` parameter by value with the safe-default behavior. Either way, the compile-time API must force a developer to explicitly opt into no limits. Effort: Medium — this is a public API change; a deprecation cycle is recommended. Validation: re-read all call sites inside `monty-python`, `monty-js`, `monty-cli`, and the `examples/` directory to confirm every binding routes through a tracker with non-`None` limits.
 
 **R-005 — Correct the `OsFunction` variant count in project documentation.**
 Finding cross-reference: SA-F-005. The `OsFunction` enum at `crates/monty/src/os.rs` contains 20 variants (including `DateToday` and `DateTimeNow` introduced for the `datetime` module). Project documentation (including references in internal materials) states "19-variant". The count itself is a minor informational concern, but a stale count invites confusion during future audits and security reviews. The recommended action is to update the count in every documentation location that mentions it. Effort: Low — documentation-only changes. Validation: grep for occurrences of "19-variant" and "19 variants" in the repository and replace with the accurate count.
@@ -747,14 +747,14 @@ flowchart LR
 
     RP -->|FunctionCall| FC["External function registry<br/>ExternalFunctionRegistry"]
     RP -->|OsCall| OC["OS operation<br/>MountTable or host os_callback"]
-    RP -->|NameLookup| NL["Host symbol resolution<br/>name_lookup callback"]
     RP -->|ResolveFutures| RF["Pending async futures<br/>resolve_futures callback"]
+    RP -->|NameLookup| NL["Host symbol resolution<br/>name_lookup callback"]
     RP -->|Complete| DN["Terminal value<br/>end of run"]
 
     FC --> HostBoundary(("Host process<br/>OUT OF AUDIT SCOPE"))
     OC --> HostBoundary
-    NL --> HostBoundary
     RF --> HostBoundary
+    NL --> HostBoundary
     DN --> HostBoundary
 
 %% Legend: The five arrows from RunProgress are the only controlled outbound-yield paths.
@@ -762,7 +762,7 @@ flowchart LR
 %% static audit because it cannot be observed from Monty's source alone.
 ```
 
-Legend (prose): The VM never writes to host resources directly; every side effect is expressed as one of the five `RunProgress<T>` variants which the host binding then routes. The five variants `FunctionCall`, `OsCall`, `NameLookup`, `ResolveFutures`, and `Complete` enumerate the entire outbound contract, corroborating invariant I-08 which §4.1 records as **Verified**. Diagram 5 also illustrates the boundary at which this audit's observation ends: any behavior past `HostBoundary` is a runtime property that cannot be reasoned about from Monty's source alone.
+Legend (prose): The VM never writes to host resources directly; every side effect is expressed as one of the five `RunProgress<T>` variants which the host binding then routes. The five variants `FunctionCall`, `OsCall`, `ResolveFutures`, `NameLookup`, and `Complete` enumerate the entire outbound contract, corroborating invariant I-08 which §4.1 records as **Verified**. Diagram 5 also illustrates the boundary at which this audit's observation ends: any behavior past `HostBoundary` is a runtime property that cannot be reasoned about from Monty's source alone.
 
 ### 7.2 Runtime-Only Behaviors Not Observable Statically
 

@@ -1,0 +1,17 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: blitzy-monty
+  description: A minimal, secure Python interpreter written in Rust for use by AI
+  tags:
+  - audit
+  - documentation
+  annotations:
+    github.com/project-slug: Blitzy-Sandbox/blitzy-monty
+    backstage.io/source-location: url:https://github.com/Blitzy-Sandbox/blitzy-monty/tree/main/
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: library
+  lifecycle: production
+  owner: blitzy-sandbox
+  system: blitzy-sandbox-projects

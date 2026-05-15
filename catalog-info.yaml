@@ -5,9 +5,11 @@ metadata:
   description: A minimal, secure Python interpreter written in Rust for use by AI
   tags:
   - audit
+  - documentation
+  - library
   - python
   - rust
-  - documentation
+  - security
   annotations:
     github.com/project-slug: Blitzy-Sandbox/blitzy-monty
     backstage.io/source-location: url:https://github.com/Blitzy-Sandbox/blitzy-monty/tree/main/
